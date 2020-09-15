@@ -116,7 +116,7 @@ def findMaxLaplacianBlobs(octave, filter, img, threshold):
     #print(f"Max blob response before scaling: {np.max(convolvedImg)}")
     #print(np.average(convolvedImg))
     convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LANCZOS4)
-    convolvedImg[convolvedImg < threshold] = 0
+    convolvedImg[convolvedImg <= threshold] = 0
     #print(f"Max blob response after scaling: {np.max(convolvedImg)}")
     effectiveFilterWidth = filter.shape[0]*(octave+1)/3
     convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)

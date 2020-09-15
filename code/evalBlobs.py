@@ -18,8 +18,8 @@ from detectBlobs import DetectBlobs
 from drawBlobs import drawBlobs
 import matplotlib.pyplot as plt
 
-image_path = '../data/image_sets/ledge/1.JPG'
-numBlobsToDraw = 1000
+image_path = '../data/uttower_right.jpg'
+numBlobsToDraw = 3000
 
 im = cv2.imread(image_path)
 

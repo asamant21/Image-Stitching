@@ -13,13 +13,10 @@ from detectBlobs import DetectBlobs
 #   Output: 
 #        detected feature points (in any format you like).
 
+
 def detectKeypoints(im):
-    # YOUR CODE STARTS HERE
-    h, w = im.shape
-    return {'pt': np.array([[h//5*2,w//3], [h//5, w//3*2],
-                            [h//5*4, w//3], [h//5*3, w//3*2]]),
-            'radius': np.array([1,1,1,1]),
-            'score': np.array([1,1,1,1])}
+    im = im/255.0
+    return DetectBlobs(im)
 
 
 
@@ -39,8 +36,7 @@ def detectKeypoints(im):
 #                      and dim is the dimension of each descriptor. 
 #
 def computeDescriptors(im, keypoints):
-    # YOUR CODE STARTS HERE
-    return np.zeros(shape=(len(keypoints['pt']), 10), dtype=np.float32)
+    return computeSIFTDescriptors(im, keypoints)
 
 
 # computeSIFTDescriptors(...): compute SIFT feature descriptors from the
