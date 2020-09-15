@@ -1,6 +1,5 @@
 import numpy as np
 import math
-import sys
 import cv2
 from numpy.core._multiarray_umath import ndarray
 from scipy import ndimage
@@ -56,7 +55,7 @@ def generateLOGFilter(sigma: float):
             yCoord = float(row - center)
             logFilter[row, col] = laplacianOfGaussian(xCoord, yCoord, sigma)
 
-    # Zero Out Sum of Laplacians
+    # Zero Out Sum of Laplacian
     logFilter -= logFilter.mean()
 
     return logFilter
@@ -66,7 +65,7 @@ def laplacianOfGaussian(x: float,y: float, sigma: float) -> float:
     sumOfCoord = x**2 + y**2
     sigmaTerm = 2*(sigma**2)
     expTerm = np.exp(-sumOfCoord/sigmaTerm)
-    return (sumOfCoord-sigmaTerm)*expTerm/(2 * np.pi * (sigma ** 4))
+    return (sumOfCoord-sigmaTerm)*expTerm/(sigma ** 4)
 
 
 def generateGuassianFilter(sigma: float):
@@ -174,3 +173,4 @@ def DetectBlobs(
                 blobs = np.append(blobs, np.array([row, col, math.sqrt(2) * sigmaMax[row, col], normMax[row, col]]))
     blobs = np.reshape(blobs, (-1, 4))
     return blobs.round()
+
