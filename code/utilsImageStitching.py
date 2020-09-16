@@ -91,8 +91,35 @@ def computeSIFTDescriptors(im, keypoints):
 #         index2       - 1-D array contains the indices of descriptors2 in matches
 
 def getMatches(descriptors1, descriptors2):
-    # YOUR CODE STARTS HERE
-    return np.array(range(len(descriptors1))), np.array(range(len(descriptors2)))
+
+    THRESHOLD = ?
+
+    descriptors1_matches = []
+    descriptors2_matches = []
+    for i in range(len(descriptors1)):
+        largest = -1
+        second_largest = -1
+
+        largest_index = -1
+        second_largest_index = -1
+
+        for j in range(len(descriptors2)):
+            k = np.linalg.norm(np.array(descriptors1[i]) - np.array(descriptors2[j]))
+            if k > largest:
+                second_largest = largest
+                second_largest_index = largest_index
+                largest = k
+                largest_index = j
+            elif k > second_largest:
+                second_largest = k
+                second_largest_index = j
+
+        if largest > THRESHOLD and second_largest < largest * 0.75:
+            descriptors1_matches.append(i)
+            descriptors2_matches.append(largest_index)
+
+
+    return np.array(descriptors1_matches), np.array(descriptors2_matches)
 
 
 
