@@ -161,7 +161,7 @@ def DetectBlobs(
             supressedLocs = maxDiff > 0
             normMax[supressedLocs] = convolvedResponse[supressedLocs]
             sigmaMax[supressedLocs] = sigma * math.pow(2, octave + scale / num_intervals)
-    finalSpacialWidth = 2*math.ceil(math.sqrt((0.006 * im.shape[0]) ** 2 + (0.006 * im.shape[1]) ** 2))
+    finalSpacialWidth = 2*math.ceil(math.sqrt((0.005 * im.shape[0]) ** 2 + (0.005 * im.shape[1]) ** 2))
     maxedImg = ndimage.maximum_filter(normMax, size=(finalSpacialWidth, finalSpacialWidth))
     diffImg = maxedImg - normMax
     normMax[diffImg != 0] = 0

@@ -92,10 +92,10 @@ def computeSIFTDescriptors(im, keypoints):
 
 def getMatches(descriptors1, descriptors2):
 
-    THRESHOLD = ?
-
     descriptors1_matches = []
     descriptors2_matches = []
+    THRESHOLD = 100
+
     for i in range(len(descriptors1)):
         largest = -1
         second_largest = -1
@@ -105,19 +105,17 @@ def getMatches(descriptors1, descriptors2):
 
         for j in range(len(descriptors2)):
             k = np.linalg.norm(np.array(descriptors1[i]) - np.array(descriptors2[j]))
-            if k > largest:
-                second_largest = largest
-                second_largest_index = largest_index
-                largest = k
-                largest_index = j
-            elif k > second_largest:
-                second_largest = k
-                second_largest_index = j
-
-        if largest > THRESHOLD and second_largest < largest * 0.75:
+            if k < largest or largest == -1:
+                    second_largest = largest
+                    second_largest_index = largest_index
+                    largest = k
+                    largest_index = j
+            elif k < second_largest or second_largest == -1:
+                    second_largest = k
+                    second_largest_index = j
+        if largest < second_largest * 0.75 and largest < THRESHOLD:
             descriptors1_matches.append(i)
             descriptors2_matches.append(largest_index)
-
 
     return np.array(descriptors1_matches), np.array(descriptors2_matches)
 
@@ -239,19 +237,21 @@ def warpImageWithMapping(im_left, im_right, H):
 
 def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     idx1, idx2 = matches
-    
+
     cv2matches = []
     for i,j in zip(idx1, idx2):
         cv2matches.append(cv2.DMatch(i, j, _distance=0))
 
     _kp1, _kp2 = [], []
-    for i in range(len(keypoints1['pt'])):
-        _kp1.append(cv2.KeyPoint(keypoints1['pt'][i][1], keypoints1['pt'][i][0], _size=keypoints1['radius'][i], _response=keypoints1['score'][i], _class_id=len(_kp1)))
-    for i in range(len(keypoints2['pt'])):
-        _kp2.append(cv2.KeyPoint(keypoints2['pt'][i][1], keypoints2['pt'][i][0], _size=keypoints2['radius'][i], _response=keypoints2['score'][i], _class_id=len(_kp2)))
+    for i in range(len(keypoints1)):
+        _kp1.append(cv2.KeyPoint(keypoints1[i][1], keypoints1[i][0], _size=keypoints1[i][2], _response=keypoints1[i][3], _class_id=len(_kp1)))
+    for i in range(len(keypoints2)):
+        _kp2.append(cv2.KeyPoint(keypoints2[i][1], keypoints2[i][0], _size=keypoints2[i][2], _response=keypoints2[i][3], _class_id=len(_kp2)))
     
     im_matches = np.empty((max(im1.shape[0], im2.shape[0]), im1.shape[1]+im2.shape[1], 3), dtype=np.uint8)
     cv2.drawMatches(im1, _kp1, im2, _kp2, cv2matches, im_matches, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     cv2.imshow(title, im_matches)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 

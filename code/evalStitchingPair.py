@@ -21,13 +21,16 @@ keypoints_right = detectKeypoints(im_right)
 descriptors_left = computeDescriptors(im_left, keypoints_left)
 descriptors_right = computeDescriptors(im_right, keypoints_right)
 
+print(f"Getting Matches {len(descriptors_left)} with {len(descriptors_right)} key values")
 # Implement the getMatches() function in utilsImageStitching.py
 # to get matches
 matches = getMatches(descriptors_left, descriptors_right)
 
+print("Finished Matches")
 drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
 
-# Implement the RANSAC() function in utilsImageStitching.py.
+
+"""# Implement the RANSAC() function in utilsImageStitching.py.
 # Run RANSAC to estimate a homography mapping
 H, numInliers = RANSAC(matches, keypoints_left, keypoints_right)
 
@@ -38,4 +41,4 @@ panorama = warpImageWithMapping(im_left, im_right, H)
 
 plt.imshow(panorama, cmap='gray', vmin=0, vmax=255)
 
-plt.show()
+plt.show()"""
