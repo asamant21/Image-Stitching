@@ -45,7 +45,7 @@ from scipy import ndimage
 
 
 def generateLOGFilter(sigma: float):
-    filterSize = math.floor(6*sigma+1)
+    filterSize = 2*math.floor(3*sigma)+1
     logFilter = np.empty(shape=(filterSize, filterSize))
     logFilter.fill(0)
     center = (filterSize-1)/2
@@ -89,35 +89,36 @@ def gaussian(x: float, y: float, sigma: float) -> float:
     sumOfCoord = x ** 2 + y ** 2
     sigmaTerm = 2*(sigma**2)
     expTerm = np.exp(-sumOfCoord/sigmaTerm)
-    return expTerm/(np.pi*sigmaTerm)
+    return expTerm/(sigma**2)
 
 
 def findMaxGaussianBlobs(octave, scale, num_intervals, baseFilter, diffFilter, img, threshold):
     resizeFactor = math.pow(2, octave)
-    scaledImg = cv2.resize(img, (int(img.shape[1] / resizeFactor), int(img.shape[0] / resizeFactor)))
-    convolvedBaseImg = ndimage.convolve(scaledImg, baseFilter)
-    convolvedDiffImg = ndimage.convolve(scaledImg, diffFilter)
+    scaledImg = cv2.resize(img, (math.ceil(img.shape[1] / resizeFactor), math.ceil(img.shape[0] / resizeFactor)))
+    convolvedBaseImg = ndimage.convolve(scaledImg, baseFilter, mode='nearest')
+    convolvedDiffImg = ndimage.convolve(scaledImg, diffFilter, mode='nearest')
     convolvedImg = convolvedDiffImg - convolvedBaseImg
-    convolvedImg = np.square(convolvedImg)
+    convolvedImg = np.absolute(convolvedImg)
     #print(f"Max blob response before scaling: {np.max(convolvedImg)}")
     #print(np.average(convolvedImg))
-    convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]))
+    convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
     convolvedImg[convolvedImg < threshold] = 0
     #print(f"Max blob response after scaling: {np.max(convolvedImg)}")
-    convolvedImg = nonMaxSupression(convolvedImg, (octave+1)*3*math.pow(2, scale/num_intervals)*math.sqrt(2))
+    effectiveFilterWidth = baseFilter.shape[0] / 3 * (octave + 1)
+    convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)
     return convolvedImg
 
 
 def findMaxLaplacianBlobs(octave, filter, img, threshold):
     resizeFactor = float(math.pow(2, octave))
     scaledImg = cv2.resize(img, (math.ceil(img.shape[1]/resizeFactor), math.ceil(img.shape[0]/resizeFactor)))
-    convolvedImg = convolveImage(filter, scaledImg)
+    convolvedImg = convolveImage(scaledImg, filter)
     #print(f"Max blob response before scaling: {np.max(convolvedImg)}")
     #print(np.average(convolvedImg))
-    convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LANCZOS4)
+    convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
     convolvedImg[convolvedImg <= threshold] = 0
     #print(f"Max blob response after scaling: {np.max(convolvedImg)}")
-    effectiveFilterWidth = filter.shape[0]*(octave+1)/3
+    effectiveFilterWidth = filter.shape[0]/2*math.pow(2, octave)
     convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)
     return convolvedImg
 
@@ -129,7 +130,7 @@ def nonMaxSupression(img, filterSize):
     return img
 
 
-def convolveImage(filter, img):
+def convolveImage(img, filter):
     convolvedImg = ndimage.convolve(img, filter, mode='nearest')
     return np.absolute(convolvedImg)
 
@@ -143,8 +144,7 @@ def DetectBlobs(
     if len(im.shape) > 2:
         im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)/255
 
-    num_octaves = math.ceil(math.log(min(im.shape)/sigma))
-
+    num_octaves = math.floor(math.log(min(im.shape)/sigma))
     sigmaMax = np.empty(shape=im.shape)
     normMax = np.empty(shape=im.shape)
     sigmaMax.fill(0)
@@ -160,7 +160,7 @@ def DetectBlobs(
             maxDiff = convolvedResponse - normMax
             supressedLocs = maxDiff > 0
             normMax[supressedLocs] = convolvedResponse[supressedLocs]
-            sigmaMax[supressedLocs] = (sigma * (octave+1) * math.pow(2, scale / num_intervals))
+            sigmaMax[supressedLocs] = sigma * math.pow(2, octave + scale / num_intervals)
     finalSpacialWidth = 2*math.ceil(math.sqrt((0.006 * im.shape[0]) ** 2 + (0.006 * im.shape[1]) ** 2))
     maxedImg = ndimage.maximum_filter(normMax, size=(finalSpacialWidth, finalSpacialWidth))
     diffImg = maxedImg - normMax
