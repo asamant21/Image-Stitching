@@ -139,9 +139,60 @@ def getMatches(descriptors1, descriptors2):
 #         (number of iterations, inlier threshold), play around with a few 
 #         "reasonable" values and pick the ones that work best.
 
+def recomputeN(P, E, S):
+    return math.log(1 - P) / math.log(1 - (1 - E)**S)
+
+def fitH(keypoints1, keypoints2, matches, sample):
+    matches1, matches2 = matches
+
+    A = []
+    for i in range(len(sample)):
+        y_1 = keypoints1[matches1[sample[i]]][0]
+        x_1 = keypoints1[matches1[sample[i]]][1]
+
+        y_2 = keypoints2[matches2[sample[i]]][0]
+        x_2 = keypoints2[matches2[sample[i]]][1]
+
+        A.append([0, 0, 0, x_1, y_1, 1, -y_2 * x_1, -y_2 * y_2, -y_2])
+        A.append([x_1, y_1, 1, 0, 0, 0, -x_2 * x_1, -x_2 * y_2, -x_2])
+
+    EV = np.linalg.eig(np.transpose(A).dot(A))
+    return np.array([[EV[0], EV[1], EV[2]], [EV[3], EV[4], EV[5]], [EV[6], EV[7], EV[8]]])
+
+
 def RANSAC(matches, keypoints1, keypoints2):
-    # YOUR CODE STARTS HERE
-    return np.array([[1,0,0],[0,1,0],[0,0,1]]), 4
+    S = 4
+    N = sys.maxsize
+    P = 0.99
+    INLIER_THRESHOLD = 5 # should be in [1, 5]
+    matches1, matches2 = matches
+
+    num_of_trials = 0
+    max_inliers = 0
+    max_H = []
+    E = 1
+    while num_of_trials < N:
+        rand_matches = random.sample(range(len(matches_1)), S)
+        
+        H = fitH(keypoints1, keypoints2, matches, rand_matches)
+
+        inliers = []
+        for i in range(len(matches_1)):
+            y_1 = keypoints1[matches1[rand_matches[i]]][0]
+            x_1 = keypoints1[matches1[rand_matches[i]]][1]
+
+            y_2 = keypoints2[matches2[rand_matches[i]]][0]
+            x_2 = keypoints2[matches2[rand_matches[i]]][1]
+
+            if np.linalg.norm(H.dot(np.array[x_1, y_1, 1]) - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
+                inliers.append(i)
+
+        if len(inliers) > max_inliers:
+            max_H = fitH(keypoints1, keypoints2, matches, inliers)
+            E = min(E, 1 - len(inliers) / len(matches_1))
+            N = recomputeN(P, E, S)
+
+    return max_H, 4
 
 
 
