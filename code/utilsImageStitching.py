@@ -233,7 +233,24 @@ def RANSAC(matches, keypoints1, keypoints2):
 #       You can use cv2.warpPerspective(...) to warp your image using H
 
 def warpImageWithMapping(im_left, im_right, H):
-    new_image = cv2.warpPerspective(im_left, M=H)
+    top_left = H.dot(np.array([0, 0, 1]))
+    top_left = np.divide(top_left, top_left[2])
+
+    top_right = H.dot(np.array([0, im_left.shape[1] - 1, 1]))
+    top_right = np.divide(top_right, top_right[2])
+
+    bottom_left = H.dot(np.array([im_left.shape[0] - 1, 0, 1]))
+    bottom_left = np.divide(bottom_left, bottom_left[2])
+
+    bottom_right = H.dot(np.array([im_left.shape[0] - 1, im_left.shape[1] - 1, 1]))
+    bottom_right = np.divide(bottom_right, bottom_right[2])
+
+    print(top_left)
+    print(top_right)
+    print(bottom_left)
+    print(bottom_right)
+
+    new_image = cv2.warpPerspective(im_left, dsize=(im_left.shape[0], im_left.shape[1]), M=H)
     #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
     #new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
     #new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
