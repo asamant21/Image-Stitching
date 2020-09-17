@@ -2,6 +2,7 @@ import os, sys
 import cv2
 import random
 import numpy as np
+from sklearn.neighbors import KDTree
 from detectBlobs import DetectBlobs
 
 # detectKeypoints(...): Detect feature keypoints in the input image
@@ -96,6 +97,18 @@ def getMatches(descriptors1, descriptors2):
     descriptors2_matches = []
     THRESHOLD = 100
 
+    kdt = KDTree(descriptors2, metric='euclidean')
+    dists, matches = kdt.query(descriptors1, k=2)
+
+    for i in range(len(matches)):
+        if dists[i][0] < dists[i][1] * 0.75 and dists[i][0] < THRESHOLD:
+            descriptors1_matches.append(i)
+            descriptors2_matches.append(matches[i][0])
+
+    return np.array(descriptors1_matches), np.array(descriptors2_matches)
+
+
+    """
     for i in range(len(descriptors1)):
         largest = -1
         second_largest = -1
@@ -116,8 +129,7 @@ def getMatches(descriptors1, descriptors2):
         if largest < second_largest * 0.75 and largest < THRESHOLD:
             descriptors1_matches.append(i)
             descriptors2_matches.append(largest_index)
-
-    return np.array(descriptors1_matches), np.array(descriptors2_matches)
+    """
 
 
 
@@ -171,7 +183,6 @@ def RANSAC(matches, keypoints1, keypoints2):
     E = 1
     while num_of_trials < N:
         rand_matches = random.sample(range(len(matches_1)), S)
-        
         H = fitH(keypoints1, keypoints2, matches, rand_matches)
 
         inliers = []
@@ -218,8 +229,6 @@ def warpImageWithMapping(im_left, im_right, H):
     new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
     new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
     return new_image
-
-
 
 
 # drawMatches(...): draw matches between the two images and display the image.
