@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 from detectBlobs import DetectBlobs
 
+random.seed(42)
 # detectKeypoints(...): Detect feature keypoints in the input image
 #   You can either reuse your blob detector from part 1 of this assignment
 #   or you can use the provided compiled blob detector detectBlobsSolution.pyc
@@ -105,7 +106,7 @@ def getMatches(descriptors1, descriptors2):
         if dists[i][0] < dists[i][1] * 0.75 and dists[i][0] < THRESHOLD:
             descriptors1_matches.append(i)
             descriptors2_matches.append(matches[i][0])
-
+    print(f"Found {len(descriptors1_matches)} matches")
     return np.array(descriptors1_matches), np.array(descriptors2_matches)
 
 
@@ -165,20 +166,12 @@ def fitH(keypoints1, keypoints2, matches, sample):
         y_2 = keypoints2[matches2[sample[i]]][0]
         x_2 = keypoints2[matches2[sample[i]]][1]
 
-        A.append([0, 0, 0, -x_1, -y_1, -1, y_2 * x_1, y_2 * y_1, y_2])
-        A.append([-x_1, -y_1, -1, 0, 0, 0, x_2 * x_1, x_2 * y_1, x_2])
+        A.append([0, 0, 0, x_1, y_1, 1, -y_2 * x_1, -y_2 * y_1, -y_2])
+        A.append([x_1, y_1, 1, 0, 0, 0, -x_2 * x_1, -x_2 * y_1, -x_2])
 
-    #print(np.reshape(np.dot(np.transpose(A), A), (-1, 9)))
     eVal, eVec = np.linalg.eig(np.matmul(np.transpose(A), A))
-    #for i in range(len(eVal)):
-     #   print(f"Eigenvector {eVec[i]} has Norm: {np.linalg.norm(eVec[i])}")
-    #print(f"Eigenvalues: {eVec}")
-    #min_index = -1
-    """for i in range(len(eVal)):
-        if eVal[i] > 1e-8 and (eVal[i] <= eVal[min_index] or min_index == -1):
-            min_index = i
-    print(f"Min Eigenvalue: {eVal[min_index]}")"""
-    return np.reshape(eVec[np.argmin(eVal)], (-1, 3))
+
+    return np.reshape(eVec[:, np.argmin(eVal)], (-1, 3))
 
 
 def RANSAC(matches, keypoints1, keypoints2):
@@ -206,9 +199,7 @@ def RANSAC(matches, keypoints1, keypoints2):
 
             H_p = H.dot(np.array([x_1, y_1, 1]))
             H_p = np.divide(H_p, H_p[2])
-            #print(H_p)
-            #print(H_p)
-            #print(np.linalg.norm(H_p - np.array([x_2, y_2, 1])))
+
             if np.linalg.norm(H_p - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
                 inliers.append(i)
         print(f"Num inliers: {len(inliers)}")
@@ -218,6 +209,7 @@ def RANSAC(matches, keypoints1, keypoints2):
             E = min(E, 1 - len(inliers) / len(matches1))
             N = recomputeN(P, E, S)
             print(f"Max num_iterations: {N}")
+        num_of_trials+=1
 
     return max_H, max_inliers
 
@@ -249,7 +241,6 @@ def warpImageWithMapping(im_left, im_right, H):
     cv2.imshow("Warped", new_image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    return new_image
 
 
 # drawMatches(...): draw matches between the two images and display the image.
@@ -283,3 +274,4 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     cv2.imshow(title, im_matches)
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
+
