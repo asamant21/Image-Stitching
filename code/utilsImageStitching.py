@@ -250,7 +250,7 @@ def warpImageWithMapping(im_left, im_right, H):
     print(bottom_left)
     print(bottom_right)
 
-    new_image = cv2.warpPerspective(im_left, dsize=(im_left.shape[0], im_left.shape[1]), M=H)
+    new_image = cv2.warpPerspective(im_left, dsize=(im_left.shape[1], im_left.shape[0]), M=H)
     #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
     #new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
     #new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
@@ -287,7 +287,7 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     
     im_matches = np.empty((max(im1.shape[0], im2.shape[0]), im1.shape[1]+im2.shape[1], 3), dtype=np.uint8)
     cv2.drawMatches(im1, _kp1, im2, _kp2, cv2matches, im_matches, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    cv2.imshow(title, im_matches)
+    #cv2.imshow(title, im_matches)
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
 

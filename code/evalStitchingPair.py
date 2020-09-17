@@ -27,7 +27,7 @@ print(f"Getting Matches {len(descriptors_left)} with {len(descriptors_right)} ke
 matches = getMatches(descriptors_left, descriptors_right)
 
 print("Finished Matches")
-drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
+#drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
 
 
 # Implement the RANSAC() function in utilsImageStitching.py.
