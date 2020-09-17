@@ -15,29 +15,31 @@ for fn in os.listdir(imagePath):
 # number of inliers to each transformation, use this information to determine which 
 # pair of images should be merged first (and of these, which one should be the "source" 
 # and which the "destination"), merge this pair, and proceed recursively.
+def find_and_stitch_closest_image(current_image, image_match, keypoints, descriptors):
+    
 
 keypoints = []
 descriptors = []
 for i in range(len(images)):
-	keypoints.append(detectKeypoints(images[i]))
-	descriptors.append(computeDescriptors(images[i], keypoints[i]))
+    keypoints.append(detectKeypoints(images[i]))
+    descriptors.append(computeDescriptors(images[i], keypoints[i]))
 
 num_inliers_matrix = []
 for i in range(len(images)):
-	num_inliers_list = [0] * i
-	for j in range(i, len(images)):
-		matches = getMatches(descriptors[i], descriptors[j])
-		_, numInliers = RANSAC(matches, keypoints[i], keypoints[j])
-		num_inliers_list.append(numInliers)
+    num_inliers_list = [0] * i
+    for j in range(i+1, len(images)):
+        matches = getMatches(descriptors[i], descriptors[j])
+        _, numInliers = RANSAC(matches, keypoints[i], keypoints[j])
+        num_inliers_list.append(numInliers)
 
-	num_inliers_matrix.append(num_inliers_list)
+    num_inliers_matrix.append(num_inliers_list)
 
 
 for i in range(len(num_inliers_matrix)):
-	idx = np.argpartition(num_inliers_matrix[i], -2)[-2:]
-	indices = idx[np.argsort((-num_inliers_matrix[i])[idx])]
+    idx = np.argpartition(num_inliers_matrix[i], -2)[-2:]
+    indices = idx[np.argsort((-num_inliers_matrix[i])[idx])]
 
-	if num_inliers_matrix[i][indices[0]] / num_inliers_matrix[i][indices[1]]
+    if num_inliers_matrix[i][indices[0]] / num_inliers_matrix[i][indices[1]]
 
 
 
@@ -51,7 +53,6 @@ for i in range(len(num_inliers_matrix)):
 
 imCurrent = images[0]
 for im in images[1:]:
-    
     imCurrent = warpImageWithMapping(imCurrent, im, defaultH)
 
 cv2.imwrite(sys.argv[2], imCurrent)
