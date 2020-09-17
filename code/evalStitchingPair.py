@@ -5,8 +5,8 @@ from utilsImageStitching import *
 import matplotlib.pyplot as plt
 
 # Load the left image and the right image.
-imagePathLeft = '../data/uttower_left.jpg'
-imagePathRight = '../data/uttower_right.jpg'
+imagePathLeft = '../data/image_sets/hill/2.JPG'
+imagePathRight = '../data/image_sets/hill/3.JPG'
 
 im_left = cv2.imread(imagePathLeft, cv2.IMREAD_GRAYSCALE)
 im_right = cv2.imread(imagePathRight, cv2.IMREAD_GRAYSCALE)
@@ -27,7 +27,7 @@ print(f"Getting Matches {len(descriptors_left)} with {len(descriptors_right)} ke
 matches = getMatches(descriptors_left, descriptors_right)
 
 print("Finished Matches")
-#drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
+drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
 
 
 # Implement the RANSAC() function in utilsImageStitching.py.
@@ -40,7 +40,9 @@ print("Finished RANSAC")
 # Warp one image with the estimated homography mapping
 # and composite the warpped image and another one.
 panorama = warpImageWithMapping(im_left, im_right, H)
-""""
+
+print("Finished Warping")
+
 plt.imshow(panorama, cmap='gray', vmin=0, vmax=255)
 
-plt.show()"""
+plt.show()

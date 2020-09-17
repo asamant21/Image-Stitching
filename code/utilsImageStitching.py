@@ -3,10 +3,9 @@ import math
 import cv2
 import random
 import numpy as np
-from sklearn.neighbors import KDTree
 from detectBlobs import DetectBlobs
-
 random.seed(42)
+
 # detectKeypoints(...): Detect feature keypoints in the input image
 #   You can either reuse your blob detector from part 1 of this assignment
 #   or you can use the provided compiled blob detector detectBlobsSolution.pyc
@@ -92,47 +91,19 @@ def computeSIFTDescriptors(im, keypoints):
 #   Output: 
 #         index1       - 1-D array contains the indices of descriptors1 in matches
 #         index2       - 1-D array contains the indices of descriptors2 in matches
-
 def getMatches(descriptors1, descriptors2):
-
     descriptors1_matches = []
     descriptors2_matches = []
     THRESHOLD = 100
 
-    kdt = KDTree(descriptors2, metric='euclidean')
-    dists, matches = kdt.query(descriptors1, k=2)
-
-    for i in range(len(matches)):
-        if dists[i][0] < dists[i][1] * 0.75 and dists[i][0] < THRESHOLD:
+    distances = np.linalg.norm(descriptors1[:, None] - descriptors2, axis=2)
+    for i in range(len(distances)):
+        near_dist = np.argpartition(distances[i], 2)
+        closest, second_closest = distances[i][near_dist[: 2]]
+        if closest < second_closest * 0.75 and closest < THRESHOLD:
             descriptors1_matches.append(i)
-            descriptors2_matches.append(matches[i][0])
-    print(f"Found {len(descriptors1_matches)} matches")
+            descriptors2_matches.append(near_dist[: 1][0])
     return np.array(descriptors1_matches), np.array(descriptors2_matches)
-
-
-"""
-for i in range(len(descriptors1)):
-    largest = -1
-    second_largest = -1
-
-    largest_index = -1
-    second_largest_index = -1
-
-    for j in range(len(descriptors2)):
-        k = np.linalg.norm(np.array(descriptors1[i]) - np.array(descriptors2[j]))
-        if k < largest or largest == -1:
-                second_largest = largest
-                second_largest_index = largest_index
-                largest = k
-                largest_index = j
-        elif k < second_largest or second_largest == -1:
-                second_largest = k
-                second_largest_index = j
-    if largest < second_largest * 0.75 and largest < THRESHOLD:
-        descriptors1_matches.append(i)
-        descriptors2_matches.append(largest_index)
-"""
-
 
 
 # RANSAC(...): run the RANSAC algorithm to estimate a homography mapping between two images.
@@ -185,10 +156,8 @@ def RANSAC(matches, keypoints1, keypoints2):
     max_H = []
     E = 1
     while num_of_trials < N:
-        print(N)
         rand_matches = random.sample(range(len(matches1)), S)
         H = fitH(keypoints1, keypoints2, matches, rand_matches)
-        print("Done fitting H")
         inliers = []
         for i in range(len(matches1)):
             y_1 = keypoints1[matches1[i]][0]
@@ -201,13 +170,13 @@ def RANSAC(matches, keypoints1, keypoints2):
             H_p = np.divide(H_p, H_p[2])
             if np.linalg.norm(H_p - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
                 inliers.append(i)
-        print(f"Num inliers: {len(inliers)}")
+        #print(f"Num inliers: {len(inliers)}")
         if len(inliers) > max_inliers:
             max_H = fitH(keypoints1, keypoints2, matches, inliers)
             max_inliers = len(inliers)
             E = min(E, 1 - len(inliers) / len(matches1))
             N = recomputeN(P, E, S)
-            print(f"Max num_iterations: {N}")
+            #print(f"Max num_iterations: {N}")
         num_of_trials+=1
 
     return max_H, max_inliers
@@ -236,41 +205,34 @@ def warpImageWithMapping(im_left, im_right, H):
     top_left = H.dot(np.array([0, 0, 1]))
     top_left = np.divide(top_left, top_left[2])
 
-    top_right = H.dot(np.array([0, im_left.shape[1] - 1, 1]))
+    top_right = H.dot(np.array([im_left.shape[1] - 1, 0, 1]))
     top_right = np.divide(top_right, top_right[2])
 
-    bottom_left = H.dot(np.array([im_left.shape[0] - 1, 0, 1]))
+    bottom_left = H.dot(np.array([0, im_left.shape[0] - 1, 1]))
     bottom_left = np.divide(bottom_left, bottom_left[2])
 
-    bottom_right = H.dot(np.array([im_left.shape[0] - 1, im_left.shape[1] - 1, 1]))
+    bottom_right = H.dot(np.array([im_left.shape[1] - 1, im_left.shape[0] - 1, 1]))
     bottom_right = np.divide(bottom_right, bottom_right[2])
 
-    print(top_left)
-    print(top_right)
-    print(bottom_left)
-    print(bottom_right)
+    #print(top_left)
+    #print(top_right)
+    #print(bottom_left)
+    #print(bottom_right)
 
-    min_row = min(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0]))
-    min_col = min(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1]))
+    min_col = abs(min(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0])))
+    min_row = abs(min(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1])))
 
-    max_row = max(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0]))
-    max_col = max(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1]))
+    max_col = abs(max(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0])))
+    max_row = abs(max(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1])))
 
-    row_len  = max(max_row - min_row, im_right.shape[1] - min_row)
-    col_len = max(max_col - min_col, im_right.shape[0] - min_col)
-    translation = np.array([[1, 0, abs(min_row)], [0, 1, abs(min_col)], [0, 0, 1]])
+    final_col_len = min_col + max(max_col, im_right.shape[1])
+    final_row_len = min_row + max(max_row, im_right.shape[0])
+    translation = np.array([[1, 0, min_col], [0, 1, min_row], [0, 0, 1]])
     H = np.matmul(translation, H)
-    new_image = cv2.warpPerspective(im_left, dsize=(row_len, col_len), M=H)
+    stitch_image = cv2.warpPerspective(im_left, dsize=(final_col_len, final_row_len), M=H)
 
-    new_image[abs(min_col):abs(min_col) + im_right.shape[0], abs(min_row):abs(min_row) + im_right.shape[1]] = im_right
-
-
-    #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
-    #new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
-    #new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
-    cv2.imshow("Warped", new_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    stitch_image[min_row:min_row + im_right.shape[0], min_col:min_col + im_right.shape[1]] = im_right
+    return stitch_image
 
 
 # drawMatches(...): draw matches between the two images and display the image.
@@ -301,7 +263,5 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     
     im_matches = np.empty((max(im1.shape[0], im2.shape[0]), im1.shape[1]+im2.shape[1], 3), dtype=np.uint8)
     cv2.drawMatches(im1, _kp1, im2, _kp2, cv2matches, im_matches, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    #cv2.imshow(title, im_matches)
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    cv2.imshow(title, im_matches)
 
