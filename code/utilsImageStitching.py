@@ -22,7 +22,6 @@ def detectKeypoints(im):
 
 
 
-
 # computeDescriptors(...): compute descriptors from the detected keypoints
 #   You can build the descriptors by flatting the pixels in the local 
 #   neighborhood of each keypoint, or by using the SIFT feature descriptors from
@@ -175,6 +174,8 @@ def RANSAC(matches, keypoints1, keypoints2):
             max_H = fitH(keypoints1, keypoints2, matches, inliers)
             max_inliers = len(inliers)
             E = min(E, 1 - len(inliers) / len(matches1))
+            if E == 0:
+                break
             N = recomputeN(P, E, S)
             #print(f"Max num_iterations: {N}")
         num_of_trials+=1
@@ -264,4 +265,6 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     im_matches = np.empty((max(im1.shape[0], im2.shape[0]), im1.shape[1]+im2.shape[1], 3), dtype=np.uint8)
     cv2.drawMatches(im1, _kp1, im2, _kp2, cv2matches, im_matches, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     cv2.imshow(title, im_matches)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 

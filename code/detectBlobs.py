@@ -1,7 +1,6 @@
 import numpy as np
 import math
 import cv2
-from numpy.core._multiarray_umath import ndarray
 from scipy import ndimage
 
 # Part1:
@@ -42,8 +41,6 @@ from scipy import ndimage
 # Ouput:
 #   blobs          - n x 4 array with blob in each row in (x, y, radius, score)
 #
-
-
 def generateLOGFilter(sigma: float):
     filterSize = 2*math.floor(3*sigma)+1
     logFilter = np.empty(shape=(filterSize, filterSize))
@@ -68,55 +65,16 @@ def laplacianOfGaussian(x: float,y: float, sigma: float) -> float:
     return (sumOfCoord-sigmaTerm)*expTerm/(sigma ** 4)
 
 
-def generateGuassianFilter(sigma: float):
-    filterSize = math.floor(6*sigma+1)
-    gaussianFilter: ndarray = np.empty(shape=(filterSize, filterSize))
-    gaussianFilter.fill(0)
-    center = (filterSize-1)/2
-
-    for row in range(filterSize):
-        for col in range(filterSize):
-            xCoord = float(col - center)
-            yCoord = float(row - center)
-            gaussianFilter[row, col] = gaussian(xCoord, yCoord, sigma)
-
-    totalSum = np.sum(gaussianFilter)
-    gaussianFilter = gaussianFilter/totalSum
-    return gaussianFilter
-
-
-def gaussian(x: float, y: float, sigma: float) -> float:
-    sumOfCoord = x ** 2 + y ** 2
-    sigmaTerm = 2*(sigma**2)
-    expTerm = np.exp(-sumOfCoord/sigmaTerm)
-    return expTerm/(sigma**2)
-
-
-def findMaxGaussianBlobs(octave, scale, num_intervals, baseFilter, diffFilter, img, threshold):
-    resizeFactor = math.pow(2, octave)
-    scaledImg = cv2.resize(img, (math.ceil(img.shape[1] / resizeFactor), math.ceil(img.shape[0] / resizeFactor)))
-    convolvedBaseImg = ndimage.convolve(scaledImg, baseFilter, mode='nearest')
-    convolvedDiffImg = ndimage.convolve(scaledImg, diffFilter, mode='nearest')
-    convolvedImg = convolvedDiffImg - convolvedBaseImg
-    convolvedImg = np.absolute(convolvedImg)
-    #print(f"Max blob response before scaling: {np.max(convolvedImg)}")
-    #print(np.average(convolvedImg))
-    convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
-    convolvedImg[convolvedImg < threshold] = 0
-    #print(f"Max blob response after scaling: {np.max(convolvedImg)}")
-    effectiveFilterWidth = baseFilter.shape[0] / 3 * (octave + 1)
-    convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)
-    return convolvedImg
-
-
 def findMaxLaplacianBlobs(octave, filter, img, threshold):
     resizeFactor = float(math.pow(2, octave))
     scaledImg = cv2.resize(img, (math.ceil(img.shape[1]/resizeFactor), math.ceil(img.shape[0]/resizeFactor)))
     convolvedImg = convolveImage(scaledImg, filter)
     #print(f"Max blob response before scaling: {np.max(convolvedImg)}")
     #print(np.average(convolvedImg))
+
     convolvedImg = cv2.resize(convolvedImg, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_CUBIC)
     convolvedImg[convolvedImg <= threshold] = 0
+
     #print(f"Max blob response after scaling: {np.max(convolvedImg)}")
     effectiveFilterWidth = filter.shape[0]/2*math.pow(2, octave)
     convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)
@@ -144,33 +102,36 @@ def DetectBlobs(
     if len(im.shape) > 2:
         im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)/255
 
+    # Determine number of octaves dynamically,
+    # so that we can scale to find blobs of any size
     num_octaves = math.floor(math.log(min(im.shape)/sigma))
+
     sigmaMax = np.empty(shape=im.shape)
     normMax = np.empty(shape=im.shape)
     sigmaMax.fill(0)
     normMax.fill(0)
     for octave in range(num_octaves):  # octaves defines number times we want to scale
-        #print(f"Octave {octave} Started")
         for scale in range(num_intervals):
-            #gaussianBaseFilter = generateGuassianFilter(sigma*math.pow(2, (scale)/num_intervals))
-            #gaussianDiffFilter = generateGuassianFilter(sigma*math.pow(2, (scale+1)/num_intervals))
-            #convolvedResponse = findMaxGaussianBlobs(octave, scale,num_intervals, gaussianBaseFilter, gaussianDiffFilter, im, threshold)
             logFilter = generateLOGFilter(sigma*math.pow(2, scale/num_intervals))
             convolvedResponse = findMaxLaplacianBlobs(octave, logFilter, im, threshold)
             maxDiff = convolvedResponse - normMax
             supressedLocs = maxDiff > 0
             normMax[supressedLocs] = convolvedResponse[supressedLocs]
             sigmaMax[supressedLocs] = sigma * math.pow(2, octave + scale / num_intervals)
+
+    # Final NMS based on total size of Image
     finalSpacialWidth = 2*math.ceil(math.sqrt((0.006 * im.shape[0]) ** 2 + (0.006 * im.shape[1]) ** 2))
     maxedImg = ndimage.maximum_filter(normMax, size=(finalSpacialWidth, finalSpacialWidth))
     diffImg = maxedImg - normMax
     normMax[diffImg != 0] = 0
     sigmaMax[diffImg != 0] = 0
     blobs = np.array([])
+
     for row in range(normMax.shape[0]):
         for col in range(normMax.shape[1]):
             if normMax[row, col] > threshold:
-                blobs = np.append(blobs, np.array([row, col, math.sqrt(2) * sigmaMax[row, col], normMax[row, col]]))
+                blobs = np.append(blobs, np.array([row, col, math.sqrt(2) * sigmaMax[row, col],
+                                                   normMax[row, col]]))
     blobs = np.reshape(blobs, (-1, 4))
     return blobs.round()
 
