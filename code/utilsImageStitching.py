@@ -250,7 +250,20 @@ def warpImageWithMapping(im_left, im_right, H):
     print(bottom_left)
     print(bottom_right)
 
-    new_image = cv2.warpPerspective(im_left, dsize=(im_left.shape[1], im_left.shape[0]), M=H)
+    min_row = min(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0]))
+    min_col = min(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1]))
+
+    max_row = max(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0]))
+    max_col = max(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1]))
+
+    row_len  = max_row - min_row
+    col_len = max_col - min_col
+    translation = np.array([[1, 0, abs(min_row)], [0, 1, abs(min_col)], [0, 0, 1]])
+    H = np.matmul(translation, H)
+
+    new_image = cv2.warpPerspective(im_left, dsize=(col_len, row_len), M=H)
+
+
     #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
     #new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
     #new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
