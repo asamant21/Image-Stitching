@@ -256,12 +256,13 @@ def warpImageWithMapping(im_left, im_right, H):
     max_row = max(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0]))
     max_col = max(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1]))
 
-    row_len  = max_row - min_row
-    col_len = max_col - min_col
+    row_len  = max(max_row - min_row, im_right.shape[1] - min_row)
+    col_len = max(max_col - min_col, im_right.shape[0] - min_col)
     translation = np.array([[1, 0, abs(min_row)], [0, 1, abs(min_col)], [0, 0, 1]])
     H = np.matmul(translation, H)
+    new_image = cv2.warpPerspective(im_left, dsize=(row_len, col_len), M=H)
 
-    new_image = cv2.warpPerspective(im_left, dsize=(col_len, row_len), M=H)
+    new_image[abs(min_col):abs(min_col) + im_right.shape[0], abs(min_row):abs(min_row) + im_right.shape[1]] = im_right
 
 
     #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
