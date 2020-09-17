@@ -170,15 +170,20 @@ def fitH(keypoints1, keypoints2, matches, sample):
 
     #print(np.reshape(np.dot(np.transpose(A), A), (-1, 9)))
     eVal, eVec = np.linalg.eig(np.matmul(np.transpose(A), A))
+    """
+    min_index = -1
+    for i in range(len(eVal)):
+        if eVal[i] > 1 and (eVal[i] <= eVal[min_index] or min_index == -1):
+            min_index = i
     #for i in range(len(eVal)):
      #   print(f"Eigenvector {eVec[i]} has Norm: {np.linalg.norm(eVec[i])}")
     #print(f"Eigenvalues: {eVec}")
     #min_index = -1
-    """for i in range(len(eVal)):
+    for i in range(len(eVal)):
         if eVal[i] > 1e-8 and (eVal[i] <= eVal[min_index] or min_index == -1):
             min_index = i
     print(f"Min Eigenvalue: {eVal[min_index]}")"""
-    return np.reshape(eVec[np.argmin(eVal)], (-1, 3))
+    return np.reshape(eVec[:,np.argmin(eVal)], (-1, 3))
 
 
 def RANSAC(matches, keypoints1, keypoints2):
@@ -210,6 +215,7 @@ def RANSAC(matches, keypoints1, keypoints2):
             #print(H_p)
             #print(H_p)
             #print(np.linalg.norm(H_p - np.array([x_2, y_2, 1])))
+            print(H_p)
             if np.linalg.norm(H_p - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
                 inliers.append(i)
         print(f"Num inliers: {len(inliers)}")
