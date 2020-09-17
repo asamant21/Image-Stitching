@@ -184,6 +184,7 @@ def RANSAC(matches, keypoints1, keypoints2):
     max_H = []
     E = 1
     while num_of_trials < N:
+        print(N)
         rand_matches = random.sample(range(len(matches1)), S)
         H = fitH(keypoints1, keypoints2, matches, rand_matches)
 
