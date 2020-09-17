@@ -1,4 +1,5 @@
 import os, sys
+import math
 import cv2
 import random
 import numpy as np
@@ -152,6 +153,7 @@ def getMatches(descriptors1, descriptors2):
 def recomputeN(P, E, S):
     return math.log(1 - P) / math.log(1 - (1 - E)**S)
 
+
 def fitH(keypoints1, keypoints2, matches, sample):
     matches1, matches2 = matches
 
@@ -163,11 +165,11 @@ def fitH(keypoints1, keypoints2, matches, sample):
         y_2 = keypoints2[matches2[sample[i]]][0]
         x_2 = keypoints2[matches2[sample[i]]][1]
 
-        A.append([0, 0, 0, x_1, y_1, 1, -y_2 * x_1, -y_2 * y_2, -y_2])
-        A.append([x_1, y_1, 1, 0, 0, 0, -x_2 * x_1, -x_2 * y_2, -x_2])
+        A.append([0, 0, 0, x_1, y_1, 1, -y_2 * x_1, -y_2 * y_1, -y_2])
+        A.append([x_1, y_1, 1, 0, 0, 0, -x_2 * x_1, -x_2 * y_1, -x_2])
 
-    EV = np.linalg.eig(np.transpose(A).dot(A))
-    return np.array([[EV[0], EV[1], EV[2]], [EV[3], EV[4], EV[5]], [EV[6], EV[7], EV[8]]])
+    eVal, eVec = np.linalg.eig(np.transpose(A).dot(A))
+    return np.reshape(eVec[np.argmin(eVal)], (-1, 3))
 
 
 def RANSAC(matches, keypoints1, keypoints2):
@@ -182,11 +184,11 @@ def RANSAC(matches, keypoints1, keypoints2):
     max_H = []
     E = 1
     while num_of_trials < N:
-        rand_matches = random.sample(range(len(matches_1)), S)
+        rand_matches = random.sample(range(len(matches1)), S)
         H = fitH(keypoints1, keypoints2, matches, rand_matches)
 
         inliers = []
-        for i in range(len(matches_1)):
+        for i in range(len(matches1)):
             y_1 = keypoints1[matches1[rand_matches[i]]][0]
             x_1 = keypoints1[matches1[rand_matches[i]]][1]
 
@@ -198,7 +200,7 @@ def RANSAC(matches, keypoints1, keypoints2):
 
         if len(inliers) > max_inliers:
             max_H = fitH(keypoints1, keypoints2, matches, inliers)
-            E = min(E, 1 - len(inliers) / len(matches_1))
+            E = min(E, 1 - len(inliers) / len(matches1))
             N = recomputeN(P, E, S)
 
     return max_H, 4
@@ -262,5 +264,3 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     cv2.imshow(title, im_matches)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-
