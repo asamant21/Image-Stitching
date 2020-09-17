@@ -195,15 +195,18 @@ def RANSAC(matches, keypoints1, keypoints2):
             y_2 = keypoints2[matches2[rand_matches[i]]][0]
             x_2 = keypoints2[matches2[rand_matches[i]]][1]
 
-            if np.linalg.norm(H.dot(np.array[x_1, y_1, 1]) - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
+            H_p = H.dot(np.array([x_1, y_1, 1]))
+            np.divide(H_p, H_p[2])
+            if np.linalg.norm(H_p - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
                 inliers.append(i)
 
         if len(inliers) > max_inliers:
             max_H = fitH(keypoints1, keypoints2, matches, inliers)
+            max_inliers = len(inliers)
             E = min(E, 1 - len(inliers) / len(matches1))
             N = recomputeN(P, E, S)
 
-    return max_H, 4
+    return max_H, max_inliers
 
 
 
