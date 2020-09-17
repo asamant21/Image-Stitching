@@ -5,13 +5,8 @@ from utilsImageStitching import *
 import matplotlib.pyplot as plt
 
 # Load the left image and the right image.
-<<<<<<< HEAD
 imagePathLeft = '../data/image_sets/ledge/2.jpg'
 imagePathRight = '../data/image_sets/ledge/3.jpg'
-=======
-imagePathLeft = '../data/image_sets/hill/2.JPG'
-imagePathRight = '../data/image_sets/hill/3.JPG'
->>>>>>> 132ac0e0658969ad34da6e3f5bdf4a7f752dc527
 
 im_left = cv2.imread(imagePathLeft, cv2.IMREAD_GRAYSCALE)
 im_right = cv2.imread(imagePathRight, cv2.IMREAD_GRAYSCALE)
