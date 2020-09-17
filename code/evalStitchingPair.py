@@ -30,15 +30,16 @@ print("Finished Matches")
 drawMatches(im_left, im_right, matches, keypoints_left, keypoints_right)
 
 
-"""# Implement the RANSAC() function in utilsImageStitching.py.
+# Implement the RANSAC() function in utilsImageStitching.py.
 # Run RANSAC to estimate a homography mapping
 H, numInliers = RANSAC(matches, keypoints_left, keypoints_right)
 
+print("Finished RANSAC")
 # Implement warpImageWithMapping() function in utilsImageStitching.py.
 # Warp one image with the estimated homography mapping
 # and composite the warpped image and another one.
 panorama = warpImageWithMapping(im_left, im_right, H)
-
+"""
 plt.imshow(panorama, cmap='gray', vmin=0, vmax=255)
 
 plt.show()"""
