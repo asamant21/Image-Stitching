@@ -109,28 +109,28 @@ def getMatches(descriptors1, descriptors2):
     return np.array(descriptors1_matches), np.array(descriptors2_matches)
 
 
-    """
-    for i in range(len(descriptors1)):
-        largest = -1
-        second_largest = -1
+"""
+for i in range(len(descriptors1)):
+    largest = -1
+    second_largest = -1
 
-        largest_index = -1
-        second_largest_index = -1
+    largest_index = -1
+    second_largest_index = -1
 
-        for j in range(len(descriptors2)):
-            k = np.linalg.norm(np.array(descriptors1[i]) - np.array(descriptors2[j]))
-            if k < largest or largest == -1:
-                    second_largest = largest
-                    second_largest_index = largest_index
-                    largest = k
-                    largest_index = j
-            elif k < second_largest or second_largest == -1:
-                    second_largest = k
-                    second_largest_index = j
-        if largest < second_largest * 0.75 and largest < THRESHOLD:
-            descriptors1_matches.append(i)
-            descriptors2_matches.append(largest_index)
-    """
+    for j in range(len(descriptors2)):
+        k = np.linalg.norm(np.array(descriptors1[i]) - np.array(descriptors2[j]))
+        if k < largest or largest == -1:
+                second_largest = largest
+                second_largest_index = largest_index
+                largest = k
+                largest_index = j
+        elif k < second_largest or second_largest == -1:
+                second_largest = k
+                second_largest_index = j
+    if largest < second_largest * 0.75 and largest < THRESHOLD:
+        descriptors1_matches.append(i)
+        descriptors2_matches.append(largest_index)
+"""
 
 
 
@@ -165,10 +165,19 @@ def fitH(keypoints1, keypoints2, matches, sample):
         y_2 = keypoints2[matches2[sample[i]]][0]
         x_2 = keypoints2[matches2[sample[i]]][1]
 
-        A.append([0, 0, 0, x_1, y_1, 1, -y_2 * x_1, -y_2 * y_1, -y_2])
-        A.append([x_1, y_1, 1, 0, 0, 0, -x_2 * x_1, -x_2 * y_1, -x_2])
+        A.append([0, 0, 0, -x_1, -y_1, -1, y_2 * x_1, y_2 * y_1, y_2])
+        A.append([-x_1, -y_1, -1, 0, 0, 0, x_2 * x_1, x_2 * y_1, x_2])
 
-    eVal, eVec = np.linalg.eig(np.transpose(A).dot(A))
+    #print(np.reshape(np.dot(np.transpose(A), A), (-1, 9)))
+    eVal, eVec = np.linalg.eig(np.matmul(np.transpose(A), A))
+    #for i in range(len(eVal)):
+     #   print(f"Eigenvector {eVec[i]} has Norm: {np.linalg.norm(eVec[i])}")
+    #print(f"Eigenvalues: {eVec}")
+    #min_index = -1
+    """for i in range(len(eVal)):
+        if eVal[i] > 1e-8 and (eVal[i] <= eVal[min_index] or min_index == -1):
+            min_index = i
+    print(f"Min Eigenvalue: {eVal[min_index]}")"""
     return np.reshape(eVec[np.argmin(eVal)], (-1, 3))
 
 
@@ -187,25 +196,29 @@ def RANSAC(matches, keypoints1, keypoints2):
         print(N)
         rand_matches = random.sample(range(len(matches1)), S)
         H = fitH(keypoints1, keypoints2, matches, rand_matches)
-
+        print("Done fitting H")
         inliers = []
         for i in range(len(matches1)):
-            y_1 = keypoints1[matches1[rand_matches[i]]][0]
-            x_1 = keypoints1[matches1[rand_matches[i]]][1]
+            y_1 = keypoints1[matches1[i]][0]
+            x_1 = keypoints1[matches1[i]][1]
 
-            y_2 = keypoints2[matches2[rand_matches[i]]][0]
-            x_2 = keypoints2[matches2[rand_matches[i]]][1]
+            y_2 = keypoints2[matches2[i]][0]
+            x_2 = keypoints2[matches2[i]][1]
 
             H_p = H.dot(np.array([x_1, y_1, 1]))
-            np.divide(H_p, H_p[2])
+            H_p = np.divide(H_p, H_p[2])
+            #print(H_p)
+            #print(H_p)
+            #print(np.linalg.norm(H_p - np.array([x_2, y_2, 1])))
             if np.linalg.norm(H_p - np.array([x_2, y_2, 1])) < INLIER_THRESHOLD:
                 inliers.append(i)
-
+        print(f"Num inliers: {len(inliers)}")
         if len(inliers) > max_inliers:
             max_H = fitH(keypoints1, keypoints2, matches, inliers)
             max_inliers = len(inliers)
             E = min(E, 1 - len(inliers) / len(matches1))
             N = recomputeN(P, E, S)
+            print(f"Max num_iterations: {N}")
 
     return max_H, max_inliers
 
@@ -230,10 +243,13 @@ def RANSAC(matches, keypoints1, keypoints2):
 #       You can use cv2.warpPerspective(...) to warp your image using H
 
 def warpImageWithMapping(im_left, im_right, H):
-    # YOUR CODE STARTS HERE
-    new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
-    new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
-    new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
+    new_image = cv2.warpPerspective(im_left, M=H)
+    #new_image = np.empty((max(im_left.shape[0], im_right.shape[0]), im_left.shape[1]+im_right.shape[1]), dtype=np.uint8)
+    #new_image[:im_left.shape[0], :im_left.shape[1]] = im_left
+    #new_image[:im_right.shape[0], im_left.shape[1]:] = im_right
+    cv2.imshow("Warped", new_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     return new_image
 
 
@@ -266,5 +282,5 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     im_matches = np.empty((max(im1.shape[0], im2.shape[0]), im1.shape[1]+im2.shape[1], 3), dtype=np.uint8)
     cv2.drawMatches(im1, _kp1, im2, _kp2, cv2matches, im_matches, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     cv2.imshow(title, im_matches)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
