@@ -4,51 +4,16 @@ import cv2
 import random
 import numpy as np
 from detectBlobs import DetectBlobs
-# detectKeypoints(...): Detect feature keypoints in the input image
-#   You can either reuse your blob detector from part 1 of this assignment
-#   or you can use the provided compiled blob detector detectBlobsSolution.pyc
-#
-#   Input: 
-#        im  - input image
-#   Output: 
-#        detected feature points (in any format you like).
-
 
 def detectKeypoints(im):
     im = im/255.0
     return DetectBlobs(im)
 
 
-# computeDescriptors(...): compute descriptors from the detected keypoints
-#   You can build the descriptors by flatting the pixels in the local 
-#   neighborhood of each keypoint, or by using the SIFT feature descriptors from
-#   OpenCV (see computeSIFTDescriptors(...)). Use the detected blob radii to
-#   define the neighborhood scales.
-#
-#   Input:
-#        im          - input image
-#        keypoints   - detected feature points
-#
-#   Output:
-#        descriptors - n x dim array, where n is the number of keypoints 
-#                      and dim is the dimension of each descriptor. 
-#
 def computeDescriptors(im, keypoints):
     return computeSIFTDescriptors(im, keypoints)
 
 
-# computeSIFTDescriptors(...): compute SIFT feature descriptors from the
-#   detected keypoints. This function is provided to you.
-#
-#   Input:
-#        im          - H x W array, the input image
-#        keypoints   - n x 4 array, where there are n blobs detected and
-#                      each row is [x, y, radius, score]
-#
-#   Output:
-#        descriptors - n x 128 array, where n is the number of keypoints
-#                      and 128 is the dimension of each descriptor.
-#
 def computeSIFTDescriptors(im, keypoints):
     kp = []
     for blob in keypoints:
@@ -57,36 +22,6 @@ def computeSIFTDescriptors(im, keypoints):
     return detector.compute(im, kp)[1]
 
 
-
-# getMatches(...): match two groups of descriptors.
-#
-#   There are several strategies you can use to match keypoints from the left
-#   image to those in the right image. Feel free to use any (or combinations
-#   of) strategies:
-#
-#   - Return all putative matches. You can select all pairs whose
-#   descriptor distances are below a specified threshold,
-#   or select the top few hundred descriptor pairs with the
-#   smallest pairwise distances.
-#
-#   - KNN-Match. For each keypoint in the left image, you can simply return the
-#   the K best pairings with keypoints in the right image.
-#
-#   - Lowe's Ratio Test. For each pair of keypoints to be returned, if the
-#   next best match with the same left keypoint is nearly as good as the
-#   current match to be returned, then this match should be thrown out.
-#   For example, given point A in the left image and its best and second best
-#   matches B and C in the right image, we check: score(A,B) < score(A,C)*0.75
-#   If this test fails, don't return pair (A,B)
-#
-#
-#   Input:
-#         descriptors1 - the descriptors of the first image
-#         descriptors2 - the descriptors of the second image
-# 
-#   Output: 
-#         index1       - 1-D array contains the indices of descriptors1 in matches
-#         index2       - 1-D array contains the indices of descriptors2 in matches
 def getMatches(descriptors1, descriptors2):
     descriptors1_matches = []
     descriptors2_matches = []
@@ -101,22 +36,6 @@ def getMatches(descriptors1, descriptors2):
             descriptors2_matches.append(near_dist[: 1][0])
     return np.array(descriptors1_matches), np.array(descriptors2_matches)
 
-
-# RANSAC(...): run the RANSAC algorithm to estimate a homography mapping between two images.
-#   Input:
-#        matches - two 1-D arrays that contain the indices on matches. 
-#        keypoints1       - keypoints on the left image
-#        keypoints2       - keypoints on the right image
-#
-#   Output:
-#        H                - 3 x 3 array, a homography mapping between two images
-#        numInliers       - int, the number of inliers 
-#
-#   Note: Use four matches to initialize the homography in each iteration.
-#         You should output a single transformation that gets the most inliers 
-#         in the course of all the iterations. For the various RANSAC parameters 
-#         (number of iterations, inlier threshold), play around with a few 
-#         "reasonable" values and pick the ones that work best.
 
 def recomputeN(P, E, S):
     return math.log(1 - P) / math.log(1 - (1 - E)**S)
@@ -181,24 +100,6 @@ def RANSAC(matches, keypoints1, keypoints2):
 
 
 
-
-# warpImageWithMapping(...): warp one image using the homography mapping and
-#   composite the warped image and another image into a panorama.
-# 
-#   Input: 
-#        im_left, im_right - input images.
-#        H                 - 3 x 3 array, a homography mapping
-#  
-#   Output:
-#        Panorama made of the warped image and the other.
-#
-#       To display the full warped image, you may want to modify the matrix H.
-#       CLUE: first get the coordinates of the corners under the transformation,
-#             use the new corners to determine the offsets to move the
-#             warped image such that it can be displayed completely.
-#             Modify H to fulfill this translate operation.
-#       You can use cv2.warpPerspective(...) to warp your image using H
-
 def warpImageWithMapping(im_left, im_right, H):
     top_left = H.dot(np.array([0, 0, 1]))
     top_left = np.divide(top_left, top_left[2])
@@ -228,19 +129,6 @@ def warpImageWithMapping(im_left, im_right, H):
     stitch_image[min_row:min_row + im_right.shape[0], min_col:min_col + im_right.shape[1]] = im_right
     return stitch_image
 
-
-# drawMatches(...): draw matches between the two images and display the image.
-#
-#   Input:
-#         im1: input image on the left
-#         im2: input image on the right
-#         matches: (1-D array, 1-D array) that contains indices of descriptors in matches
-#         keypoints1: keypoints on the left image
-#         keypoints2: keypoints on the right image
-#         title: title of the displayed image.
-#
-#   Note: This is a utility function that is provided to you. Feel free to
-#   modify the code to adapt to the keypoints and matches in your own format.
 
 def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     idx1, idx2 = matches

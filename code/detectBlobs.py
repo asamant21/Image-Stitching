@@ -3,44 +3,6 @@ import math
 import cv2
 from scipy import ndimage
 
-# Part1:
-#
-#   DetectBlobs(...) detects blobs in the image using the Laplacian
-#   of Gaussian filter. Blobs of different size are detected by scaling sigma
-#   as well as the size of the filter or the size of the image. Downsampling
-#   the image will be faster than upsampling the filter, but the decision of
-#   how to implement this function is up to you.
-#
-#   For each filter scale or image scale and sigma, you will need to keep track of
-#   the location and matching score for every blob detection. To combine the 2D maps
-#   of blob detections for each scale and for each sigma into a single 2D map of
-#   blob detections with varying radii and matching scores, you will need to use
-#   Non-Max Suppression (NMS).
-#
-#   Additional Notes:
-#       - We greyscale the input image for simplicity
-#       - For a simple implementation of Non-Max-Suppression, you can suppress
-#           all but the most likely detection within a sliding window over the
-#           2D maps of blob detections (ndimage.maximum_filter may help).
-#           To combine blob detections into a single 2D output,
-#           you can take the max along the sigma and scale axes. If there are
-#           still too many blobs detected, you can do a final NMS. Remember to
-#           keep track of the blob radii.
-#       - A tip that may improve your LoG filter: Normalize your LoG filter
-#           values so that your blobs detections aren't biased towards larger
-#           filters sizes
-#
-#   You can qualitatively evaluate your code using the evalBlobs.py script.
-#
-# Input:
-#   im             - input image
-#   sigma          - base sigma of the LoG filter
-#   num_intervals  - number of sigma values for each octave
-#   threshold      - threshold for blob detection
-#
-# Ouput:
-#   blobs          - n x 4 array with blob in each row in (x, y, radius, score)
-#
 def generateLOGFilter(sigma: float):
     filterSize = 2*math.floor(3*sigma)+1
     logFilter = np.empty(shape=(filterSize, filterSize))

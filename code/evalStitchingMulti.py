@@ -44,12 +44,6 @@ def find_left(images, keypoints, descriptors):
     return images[0], 0
 
 
-# Build your strategy for multi-image stitching.
-# For full credit, the order of merging the images should be determined automatically.
-# The basic idea is to first run RANSAC between every pair of images to determine the 
-# number of inliers to each transformation, use this information to determine which 
-# pair of images should be merged first (and of these, which one should be the "source" 
-# and which the "destination"), merge this pair, and proceed recursively.
 def find_and_stitch_closest_image(current_image, images, keypoints, descriptors):
     current_image_keypoints = detectKeypoints(current_image)
     current_image_descriptors = computeDescriptors(current_image, current_image_keypoints)
