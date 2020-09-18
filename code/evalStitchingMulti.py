@@ -4,10 +4,11 @@ import numpy as np
 from utilsImageStitching import *
 import matplotlib.pyplot as plt
 
-#imagePath = sys.argv[1]
-imagePath = '../data/image_sets/ledge/'
+imagePath = sys.argv[1]
+#imagePath = '../data/image_sets/ledge/'
 images = []
 for fn in os.listdir(imagePath):
+    print(fn)
     images.append(cv2.imread(os.path.join(imagePath, fn), cv2.IMREAD_GRAYSCALE))
 
 # Build your strategy for multi-image stitching. 
@@ -86,7 +87,7 @@ for i in range(num_images_to_stitch):
     keypoints.pop(joined_index)
     descriptors.pop(joined_index)
 
-plt.imshow(current_image, cmap='gray', vmin=0, vmax=255)
-
-plt.show()
-
+cv2.imwrite(sys.argv[2], current_image)
+cv2.imshow('Panorama', current_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()

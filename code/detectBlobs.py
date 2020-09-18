@@ -80,7 +80,6 @@ def findMaxLaplacianBlobs(octave, filter, img, threshold):
     convolvedImg = nonMaxSupression(convolvedImg, effectiveFilterWidth)
     return convolvedImg
 
-
 def nonMaxSupression(img, filterSize):
     maxedImg = ndimage.maximum_filter(img, size=(filterSize, filterSize))
     diffImg = maxedImg - img
@@ -130,7 +129,8 @@ def DetectBlobs(
     for row in range(normMax.shape[0]):
         for col in range(normMax.shape[1]):
             if normMax[row, col] > threshold:
-                blobs = np.append(blobs, np.array([row, col, math.sqrt(2) * sigmaMax[row, col],
+                blobs = np.append(blobs, np.array([row, col,
+                                                   math.sqrt(2) * sigmaMax[row, col],
                                                    normMax[row, col]]))
     blobs = np.reshape(blobs, (-1, 4))
     return blobs.round()
