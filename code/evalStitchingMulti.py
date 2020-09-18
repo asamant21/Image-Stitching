@@ -6,60 +6,11 @@ import matplotlib.pyplot as plt
 
 MATCHES_THRESHOLD = 10
 #imagePath = sys.argv[1]
-imagePath = '../data/image_sets/hill/'
+imagePath = '../data/image_sets/yosemite/'
 images = []
 for fn in os.listdir(imagePath):
     print(fn)
     images.append(cv2.imread(os.path.join(imagePath, fn), cv2.IMREAD_GRAYSCALE))
-
-
-def stitch_images(images, keypoints, descriptors):
-    if len(images) == 1:
-        return images[0]
-    print(f"STARTED: {len(images)}, {len(keypoints)}, {len(descriptors)}")
-    max_H = np.empty(shape=(3,3))
-    maxInliers = 0
-    max_matches = (np.empty(shape=(0)), np.empty(shape=(0)))
-    max_left_index = -1
-    max_right_index = -1
-
-    for left in range(len(images)):
-        for right in range(left+1, len(images)):
-            matches = getMatches(descriptors[left], descriptors[right])
-            matches1, matches2 = matches
-            max_matches1, max_matches2 = max_matches
-            if len(matches1) > MATCHES_THRESHOLD:
-                currH, numInliers = RANSAC(matches, keypoints[left], keypoints[right])
-                column_average = np.average(keypoints[left][matches1][:, 1])
-                if numInliers > maxInliers:
-                    if column_average < images[left].shape[1]/2:
-                        max_matches = matches2, matches1
-                        maxInliers = numInliers
-                        max_H, _ = RANSAC(max_matches, keypoints[right], keypoints[left])
-                        max_left_index = right
-                        max_right_index = left
-                    else:
-                        max_matches = matches
-                        max_H = currH
-                        maxInliers = numInliers
-                        max_left_index = left
-                        max_right_index = right
-
-    if max_left_index == -1:
-        return images[len(images)-1]
-    print(f"Left: {max_left_index}, Right: {max_right_index}")
-    current_image = warpImageWithMapping(images[max_left_index], images[max_right_index], max_H)
-    removed_indices = [max_left_index, max_right_index]
-    for element in sorted(removed_indices, reverse=True):
-        del images[element]
-        del descriptors[element]
-        del keypoints[element]
-    current_image_keypoints = detectKeypoints(current_image)
-    current_image_descriptors = computeDescriptors(current_image, current_image_keypoints)
-    images.append(current_image)
-    keypoints.append(current_image_keypoints)
-    descriptors.append(current_image_descriptors)
-    return stitch_images(images, keypoints, descriptors)
 
 
 def find_left(images, keypoints, descriptors):
@@ -143,7 +94,6 @@ for i in range(len(images)):
     descriptors.append(computeDescriptors(images[i], keypoints[i]))
 
 current_image, left_index = find_left(images, keypoints, descriptors)
-#current_image = stitch_images(images, keypoints, descriptors)
 current_image = images[left_index]
 images.pop(left_index)
 keypoints.pop(left_index)
