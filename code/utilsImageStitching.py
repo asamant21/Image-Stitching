@@ -212,11 +212,6 @@ def warpImageWithMapping(im_left, im_right, H):
     bottom_right = H.dot(np.array([im_left.shape[1] - 1, im_left.shape[0] - 1, 1]))
     bottom_right = np.divide(bottom_right, bottom_right[2])
 
-    #print(top_left)
-    #print(top_right)
-    #print(bottom_left)
-    #print(bottom_right)
-
     min_col = abs(min(int(top_left[0]), int(top_right[0]), int(bottom_left[0]), int(bottom_right[0])))
     min_row = abs(min(int(top_left[1]), int(top_right[1]), int(bottom_left[1]), int(bottom_right[1])))
 
@@ -227,6 +222,7 @@ def warpImageWithMapping(im_left, im_right, H):
     final_row_len = min_row + max(max_row, im_right.shape[0])
     translation = np.array([[1, 0, min_col], [0, 1, min_row], [0, 0, 1]])
     H = np.matmul(translation, H)
+
     stitch_image = cv2.warpPerspective(im_left, dsize=(final_col_len, final_row_len), M=H)
 
     stitch_image[min_row:min_row + im_right.shape[0], min_col:min_col + im_right.shape[1]] = im_right

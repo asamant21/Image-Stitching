@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 MATCHES_THRESHOLD = 10
 imagePath = sys.argv[1]
-#imagePath = '../data/image_sets/pier/'
+#imagePath = '../data/image_sets/yosemite/'
 images = []
 for fn in os.listdir(imagePath):
     print(fn)
@@ -86,14 +86,16 @@ def find_and_stitch_closest_image(current_image, images, keypoints, descriptors)
         return warpImageWithMapping(images[max_index], current_image, max_H), max_index
     return warpImageWithMapping(current_image, images[max_index], max_H), max_index
 
-print(f"Length of Images: {len(images)}")
+
 keypoints = []
 descriptors = []
 for i in range(len(images)):
     keypoints.append(detectKeypoints(images[i]))
     descriptors.append(computeDescriptors(images[i], keypoints[i]))
 
+print(f"Finding leftmost image")
 current_image, left_index = find_left(images, keypoints, descriptors)
+print(f"Found leftmost image. Attempting to stitch {len(images)} images")
 current_image = images[left_index]
 images.pop(left_index)
 keypoints.pop(left_index)
@@ -103,24 +105,25 @@ foundStitch = False
 
 num_images_to_stitch = len(images)
 for i in range(num_images_to_stitch):
-    #print(f"Length of Images: {len(images)}")
     new_image, joined_index = find_and_stitch_closest_image(current_image, images, keypoints, descriptors)
     if new_image.shape[0] == 0 and not foundStitch:
+        print("Current image is an outlier. Removing and continuing process.")
         current_image = images[len(images) - 1]
         images.pop(len(images) - 1)
         keypoints.pop(len(keypoints) - 1)
         descriptors.pop(len(descriptors) - 1)
         continue
     if new_image.shape[0] == 0 and foundStitch:
+        print("All remaining images are outliers.")
         break
-    print(f"Finished {i+1} stitch")
+    print(f"Finished {i+1} stitches. {len(images)} pictures remaining to process")
     current_image = new_image
     foundStitch = True
     images.pop(joined_index)
     keypoints.pop(joined_index)
     descriptors.pop(joined_index)
 
-
+print("Panorama stitch finished")
 cv2.imwrite(sys.argv[2], current_image)
 cv2.imshow('Panorama', current_image)
 cv2.waitKey(0)
