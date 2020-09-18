@@ -5,8 +5,8 @@ from utilsImageStitching import *
 import matplotlib.pyplot as plt
 
 MATCHES_THRESHOLD = 10
-#imagePath = sys.argv[1]
-imagePath = '../data/image_sets/yosemite/'
+imagePath = sys.argv[1]
+#imagePath = '../data/image_sets/pier/'
 images = []
 for fn in os.listdir(imagePath):
     print(fn)
@@ -103,7 +103,7 @@ foundStitch = False
 
 num_images_to_stitch = len(images)
 for i in range(num_images_to_stitch):
-    print(f"Length of Images: {len(images)}")
+    #print(f"Length of Images: {len(images)}")
     new_image, joined_index = find_and_stitch_closest_image(current_image, images, keypoints, descriptors)
     if new_image.shape[0] == 0 and not foundStitch:
         current_image = images[len(images) - 1]
@@ -121,8 +121,7 @@ for i in range(num_images_to_stitch):
     descriptors.pop(joined_index)
 
 
-#cv2.imwrite(sys.argv[2], current_image)
-cv2.imwrite('../data/image_sets/outputs/tester.jpg', current_image)
+cv2.imwrite(sys.argv[2], current_image)
 cv2.imshow('Panorama', current_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
