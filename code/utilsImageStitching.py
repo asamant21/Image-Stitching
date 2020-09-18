@@ -4,8 +4,6 @@ import cv2
 import random
 import numpy as np
 from detectBlobs import DetectBlobs
-random.seed(42)
-
 # detectKeypoints(...): Detect feature keypoints in the input image
 #   You can either reuse your blob detector from part 1 of this assignment
 #   or you can use the provided compiled blob detector detectBlobsSolution.pyc
@@ -19,7 +17,6 @@ random.seed(42)
 def detectKeypoints(im):
     im = im/255.0
     return DetectBlobs(im)
-
 
 
 # computeDescriptors(...): compute descriptors from the detected keypoints
@@ -267,4 +264,3 @@ def drawMatches(im1, im2, matches, keypoints1, keypoints2, title='matches'):
     cv2.imshow(title, im_matches)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-

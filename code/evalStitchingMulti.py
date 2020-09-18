@@ -4,14 +4,96 @@ import numpy as np
 from utilsImageStitching import *
 import matplotlib.pyplot as plt
 
-imagePath = sys.argv[1]
-#imagePath = '../data/image_sets/ledge/'
+MATCHES_THRESHOLD = 10
+#imagePath = sys.argv[1]
+imagePath = '../data/image_sets/hill/'
 images = []
 for fn in os.listdir(imagePath):
     print(fn)
     images.append(cv2.imread(os.path.join(imagePath, fn), cv2.IMREAD_GRAYSCALE))
 
-# Build your strategy for multi-image stitching. 
+
+def stitch_images(images, keypoints, descriptors):
+    if len(images) == 1:
+        return images[0]
+    print(f"STARTED: {len(images)}, {len(keypoints)}, {len(descriptors)}")
+    max_H = np.empty(shape=(3,3))
+    maxInliers = 0
+    max_matches = (np.empty(shape=(0)), np.empty(shape=(0)))
+    max_left_index = -1
+    max_right_index = -1
+
+    for left in range(len(images)):
+        for right in range(left+1, len(images)):
+            matches = getMatches(descriptors[left], descriptors[right])
+            matches1, matches2 = matches
+            max_matches1, max_matches2 = max_matches
+            if len(matches1) > MATCHES_THRESHOLD:
+                currH, numInliers = RANSAC(matches, keypoints[left], keypoints[right])
+                column_average = np.average(keypoints[left][matches1][:, 1])
+                if numInliers > maxInliers:
+                    if column_average < images[left].shape[1]/2:
+                        max_matches = matches2, matches1
+                        maxInliers = numInliers
+                        max_H, _ = RANSAC(max_matches, keypoints[right], keypoints[left])
+                        max_left_index = right
+                        max_right_index = left
+                    else:
+                        max_matches = matches
+                        max_H = currH
+                        maxInliers = numInliers
+                        max_left_index = left
+                        max_right_index = right
+
+    if max_left_index == -1:
+        return images[len(images)-1]
+    print(f"Left: {max_left_index}, Right: {max_right_index}")
+    current_image = warpImageWithMapping(images[max_left_index], images[max_right_index], max_H)
+    removed_indices = [max_left_index, max_right_index]
+    for element in sorted(removed_indices, reverse=True):
+        del images[element]
+        del descriptors[element]
+        del keypoints[element]
+    current_image_keypoints = detectKeypoints(current_image)
+    current_image_descriptors = computeDescriptors(current_image, current_image_keypoints)
+    images.append(current_image)
+    keypoints.append(current_image_keypoints)
+    descriptors.append(current_image_descriptors)
+    return stitch_images(images, keypoints, descriptors)
+
+
+def find_left(images, keypoints, descriptors):
+    num_left_matches = np.empty(shape=(len(images)))
+    num_right_matches = np.empty(shape=(len(images)))
+    num_left_matches.fill(0)
+    num_right_matches.fill(0)
+    for left in range(len(images)):
+        for right in range(left+1,len(images)):
+            if left == right:
+                continue
+            matches = getMatches(descriptors[left], descriptors[right])
+            matches1, matches2 = matches
+            if len(matches1) > MATCHES_THRESHOLD:
+                column_average = np.average(keypoints[left][matches1][:, 1])
+                if column_average > images[left].shape[1] / 2:
+                    num_left_matches[left]+=1
+                    num_right_matches[right]+=1
+                else:
+                    num_right_matches[left]+=1
+                    num_left_matches[right]+=1
+    max_left = 0
+    min_right = len(images)
+    for i in range(len(images)):
+        if num_left_matches[i] != 0 or num_right_matches[i] != 0:
+            max_left = max(max_left, num_left_matches[i])
+            min_right = min(min_right, num_right_matches[i])
+    for i in range(len(images)):
+        if num_left_matches[i] == max_left and num_right_matches[i] == min_right:
+            return images[i], i
+    return images[0], 0
+
+
+# Build your strategy for multi-image stitching.
 # For full credit, the order of merging the images should be determined automatically.
 # The basic idea is to first run RANSAC between every pair of images to determine the 
 # number of inliers to each transformation, use this information to determine which 
@@ -26,7 +108,6 @@ def find_and_stitch_closest_image(current_image, images, keypoints, descriptors)
     max_index = -1
     is_left = True
 
-    MATCHES_THRESHOLD = 10
     for i in range(len(images)):
         matches = getMatches(current_image_descriptors, descriptors[i])
         matches1, matches2 = matches
@@ -61,10 +142,12 @@ for i in range(len(images)):
     keypoints.append(detectKeypoints(images[i]))
     descriptors.append(computeDescriptors(images[i], keypoints[i]))
 
-current_image = images[len(images)-1]
-images.pop(len(images)-1)
-keypoints.pop(len(keypoints)-1)
-descriptors.pop(len(descriptors)-1)
+current_image, left_index = find_left(images, keypoints, descriptors)
+#current_image = stitch_images(images, keypoints, descriptors)
+current_image = images[left_index]
+images.pop(left_index)
+keypoints.pop(left_index)
+descriptors.pop(left_index)
 
 foundStitch = False
 
@@ -87,7 +170,9 @@ for i in range(num_images_to_stitch):
     keypoints.pop(joined_index)
     descriptors.pop(joined_index)
 
-cv2.imwrite(sys.argv[2], current_image)
+
+#cv2.imwrite(sys.argv[2], current_image)
+cv2.imwrite('../data/image_sets/outputs/tester.jpg', current_image)
 cv2.imshow('Panorama', current_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
